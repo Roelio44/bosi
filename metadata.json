@@ -1,0 +1,6 @@
+{
+  "name": "Betthrob",
+  "description": "Online Sports and Casino Betting Platform",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
