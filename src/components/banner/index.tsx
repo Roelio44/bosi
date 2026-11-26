@@ -6,6 +6,7 @@ import { useAuth } from 'hooks/use-auth-context';
 // components
 import Image from 'components/image';
 import ColorButton from 'components/ColorButton';
+import { useSettingsContext } from 'components/settings';
 import { useTranslate } from 'locales';
 // store
 import { useSelector } from 'store/store';
@@ -130,6 +131,7 @@ const Banner = () => {
     const { t } = useTranslate();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const { isLogined } = useAuth();
+    const { onToggleModal } = useSettingsContext();
     const { banners } = useSelector((state) => state.setting);
 
     const [width, setWidth] = useState(window.innerWidth);
@@ -205,7 +207,7 @@ const Banner = () => {
                             fontWeight={isMobile ? 600 : 800}
                             color="text.primary"
                         >
-                            {t('signUpGetUpTo')}
+                            EXCLUSIVE REWARDS UP TO
                         </Typography>
                         <GradientText variant={isMobile ? 'h4' : 'h3'} fontWeight={800}>
                             $20,000.00
@@ -218,6 +220,7 @@ const Banner = () => {
                             {t('inCasinoOrSports')}
                         </Typography>
                         <StyledButton
+                            onClick={() => onToggleModal('SIGNIN')}
                             sx={{
                                 borderRadius: 2,
                                 width: { xs: '103px', md: '156px' },
@@ -232,7 +235,7 @@ const Banner = () => {
                                 }
                             }}
                         >
-                            {t('joinNow')}
+                            {t('login')}
                         </StyledButton>
                     </Stack>
                     {/* </ContentContainer> */}

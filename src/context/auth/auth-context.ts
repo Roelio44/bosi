@@ -1,14 +1,6 @@
 import { createContext } from 'react';
 import { ICryptoCurrency } from 'types/user';
 
-export type RegisterValue = {
-    email: string;
-    username: string;
-    password: string;
-    currencyId: string;
-    inviteCode: string;
-};
-
 export type AuthContextValue = {
     authLoading: boolean;
     isLogined: boolean;
@@ -20,7 +12,6 @@ export type AuthContextValue = {
     language: string;
     login: (username: string, password: string, remember: boolean) => Promise<void>;
     updateUser: (params: any) => Promise<void>;
-    register: (registerValue: RegisterValue) => Promise<void>;
     setLanguage: (value: string) => Promise<void>;
     updatePreferenceData: (name: string, value: string) => Promise<void>;
     logout: () => void;

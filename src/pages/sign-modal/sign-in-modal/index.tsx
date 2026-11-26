@@ -127,16 +127,8 @@ const SignInModal = () => {
                         >
                             {t('auth.signIn')}
                         </ColorButton>
-                        <Typography sx={{ color: 'text.primary', fontSize: 14, fontWeight: 600 }}>
-                            {t('auth.newToBethrob')}{' '}
-                            <Typography
-                                component="span"
-                                variant="inherit"
-                                sx={{ color: 'primary.main', cursor: 'pointer' }}
-                                onClick={() => onToggleModal('SIGNUP')}
-                            >
-                                {t('auth.createAccount')}
-                            </Typography>
+                        <Typography sx={{ color: 'text.secondary', fontSize: 13, fontWeight: 500, textAlign: 'center' }}>
+                            Accounts are created by an administrator.
                         </Typography>
                     </Stack>
                 </FormProvider>

@@ -9,7 +9,7 @@ export type SettingsValueProps = {
     themeColorPresets: 'default' | 'cyan' | 'purple' | 'blue' | 'orange' | 'red';
 };
 
-export type IModalType = '' | 'SIGNIN' | 'SIGNUP' | 'PASSWORD' | 'EXPLORE' | 'DEPOSIT' | 'LANGUAGE' | 'SPIN';
+export type IModalType = '' | 'SIGNIN' | 'PASSWORD' | 'EXPLORE' | 'DEPOSIT' | 'LANGUAGE' | 'SPIN';
 
 export type SettingsContextProps = SettingsValueProps & {
     // Update

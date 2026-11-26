@@ -43,11 +43,15 @@ import CardGiftcardOutlinedIcon from '@mui/icons-material/CardGiftcardOutlined';
 import DashboardOutlinedIcon from '@mui/icons-material/DashboardOutlined';
 import { useSnackbar } from 'notistack';
 import { adminApi, AdminOverview, AdminProvider, AdminStatus, AdminUser, getAdminToken } from 'api/admin.api';
+import { useAuth } from 'hooks/use-auth-context';
+import { useRouter } from 'routes/hook';
 import { dispatch } from 'store/store';
 import { updateBanner } from 'store/slices/setting';
 
 export default function AdminPanel() {
     const { enqueueSnackbar } = useSnackbar();
+    const { isLogined, user } = useAuth();
+    const router = useRouter();
 
     const [status, setStatus] = useState<AdminStatus | null>(null);
     const [authenticated, setAuthenticated] = useState<boolean>(Boolean(getAdminToken()));
@@ -74,12 +78,20 @@ export default function AdminPanel() {
 
     // Modals
     const [createUserOpen, setCreateUserOpen] = useState<boolean>(false);
-    const [newUser, setNewUser] = useState({
+    const [newUser, setNewUser] = useState<{
+        username: string;
+        email: string;
+        password: string;
+        currency: string;
+        balance: string;
+        role: 'user' | 'admin';
+    }>({
         username: '',
         email: '',
         password: '',
         currency: 'USD',
-        balance: '1000'
+        balance: '1000',
+        role: 'user'
     });
 
     const [balanceDialogUser, setBalanceDialogUser] = useState<AdminUser | null>(null);
@@ -101,13 +113,13 @@ export default function AdminPanel() {
             setLoadingAuth(true);
             const data = await adminApi.getStatus();
             setStatus(data);
-            setAuthenticated(Boolean(data.authenticated && getAdminToken()));
+            setAuthenticated(Boolean(data.authenticated && (getAdminToken() || (isLogined && user?.role === 'admin'))));
         } catch (err: any) {
             enqueueSnackbar(err?.message || 'Unable to check admin status', { variant: 'error' });
         } finally {
             setLoadingAuth(false);
         }
-    }, [enqueueSnackbar]);
+    }, [enqueueSnackbar, isLogined, user?.role]);
 
     const loadAllData = useCallback(async () => {
         try {
@@ -195,14 +207,26 @@ export default function AdminPanel() {
                 email: newUser.email.trim(),
                 password: newUser.password,
                 currency: newUser.currency,
-                balance: Number(newUser.balance) || 0
+                balance: Number(newUser.balance) || 0,
+                role: newUser.role
             });
-            enqueueSnackbar(`Player "${newUser.username}" created`, { variant: 'success' });
+            enqueueSnackbar(`Account "${newUser.username}" (${newUser.role}) created`, { variant: 'success' });
             setCreateUserOpen(false);
-            setNewUser({ username: '', email: '', password: '', currency: 'USD', balance: '1000' });
+            setNewUser({ username: '', email: '', password: '', currency: 'USD', balance: '1000', role: 'user' });
             loadAllData();
         } catch (err: any) {
-            enqueueSnackbar(err?.message || 'Failed to create player', { variant: 'error' });
+            enqueueSnackbar(err?.message || 'Failed to create account', { variant: 'error' });
+        }
+    };
+
+    const handleToggleRole = async (targetUser: AdminUser) => {
+        const nextRole = targetUser.role === 'admin' ? 'user' : 'admin';
+        try {
+            await adminApi.updateUserRole(targetUser._id, nextRole);
+            enqueueSnackbar(`${targetUser.username} is now ${nextRole}`, { variant: 'success' });
+            loadAllData();
+        } catch (err: any) {
+            enqueueSnackbar(err?.message || 'Failed to update role', { variant: 'error' });
         }
     };
 
@@ -217,10 +241,10 @@ export default function AdminPanel() {
         }
     };
 
-    const handleToggleKyc = async (user: AdminUser) => {
+    const handleToggleKyc = async (u: AdminUser) => {
         try {
-            await adminApi.updateUserKyc(user._id, !user.kyc);
-            enqueueSnackbar(`Updated KYC for ${user.username}`, { variant: 'success' });
+            await adminApi.updateUserKyc(u._id, !u.kyc);
+            enqueueSnackbar(`Updated KYC for ${u.username}`, { variant: 'success' });
             loadAllData();
         } catch (err: any) {
             enqueueSnackbar(err?.message || 'Failed to update KYC', { variant: 'error' });
@@ -345,6 +369,51 @@ export default function AdminPanel() {
         return (
             <Stack alignItems="center" justifyContent="center" sx={{ minHeight: '60vh' }}>
                 <Typography color="text.secondary">Checking admin access...</Typography>
+            </Stack>
+        );
+    }
+
+    if (isLogined && user?.role !== 'admin' && !getAdminToken()) {
+        return (
+            <Stack alignItems="center" justifyContent="center" sx={{ minHeight: '72vh', py: 4 }}>
+                <Card
+                    sx={{
+                        width: '100%',
+                        maxWidth: 440,
+                        p: 4,
+                        borderRadius: 3,
+                        bgcolor: 'background.layer2',
+                        border: '1px solid',
+                        borderColor: 'divider',
+                        textAlign: 'center'
+                    }}
+                >
+                    <Stack spacing={2} alignItems="center">
+                        <Box
+                            sx={{
+                                width: 48,
+                                height: 48,
+                                borderRadius: 2,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                bgcolor: 'rgba(255, 86, 48, 0.14)',
+                                color: 'error.main'
+                            }}
+                        >
+                            <LockOutlinedIcon />
+                        </Box>
+                        <Typography variant="h5" fontWeight={700}>
+                            Administrators Only
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                            Your account does not have administrator permissions to view this page.
+                        </Typography>
+                        <Button variant="contained" onClick={() => router.push('/')}>
+                            Return Home
+                        </Button>
+                    </Stack>
+                </Card>
             </Stack>
         );
     }
@@ -485,15 +554,17 @@ export default function AdminPanel() {
                         >
                             {refreshing ? 'Syncing...' : 'Sync'}
                         </Button>
-                        <Button
-                            variant="outlined"
-                            color="error"
-                            size="small"
-                            startIcon={<LogoutIcon />}
-                            onClick={handleLogout}
-                        >
-                            Lock
-                        </Button>
+                        {Boolean(getAdminToken()) && (
+                            <Button
+                                variant="outlined"
+                                color="error"
+                                size="small"
+                                startIcon={<LogoutIcon />}
+                                onClick={handleLogout}
+                            >
+                                Lock
+                            </Button>
+                        )}
                     </Stack>
                 </Stack>
 
@@ -506,7 +577,7 @@ export default function AdminPanel() {
                     scrollButtons="auto"
                 >
                     <Tab icon={<DashboardOutlinedIcon fontSize="small" />} iconPosition="start" label="Overview" />
-                    <Tab icon={<PeopleOutlineIcon fontSize="small" />} iconPosition="start" label={`Players (${users.length})`} />
+                    <Tab icon={<PeopleOutlineIcon fontSize="small" />} iconPosition="start" label={`Accounts (${users.length})`} />
                     <Tab
                         icon={<CasinoOutlinedIcon fontSize="small" />}
                         iconPosition="start"
@@ -528,7 +599,7 @@ export default function AdminPanel() {
                             <Card sx={{ p: 2.5, borderRadius: 2, bgcolor: 'background.layer2', border: '1px solid', borderColor: 'divider' }}>
                                 <Stack direction="row" justifyContent="space-between" alignItems="center">
                                     <Typography variant="body2" color="text.secondary">
-                                        Registered Players
+                                        Accounts
                                     </Typography>
                                     <PeopleOutlineIcon color="primary" fontSize="small" />
                                 </Stack>
@@ -609,14 +680,14 @@ export default function AdminPanel() {
                                 {sportsbook.enabled ? 'Pause Sportsbook' : 'Resume Sportsbook'}
                             </Button>
                             <Button variant="outlined" startIcon={<AddIcon />} onClick={() => { setActiveTab(1); setCreateUserOpen(true); }}>
-                                Create Demo Player
+                                Create Account
                             </Button>
                         </Stack>
                     </Card>
                 </Stack>
             )}
 
-            {/* Tab 1: Players & Balances */}
+            {/* Tab 1: Accounts & Balances */}
             {activeTab === 1 && (
                 <Card sx={{ p: 2.5, borderRadius: 2, bgcolor: 'background.layer2', border: '1px solid', borderColor: 'divider' }}>
                     <Stack
@@ -628,7 +699,7 @@ export default function AdminPanel() {
                     >
                         <TextField
                             size="small"
-                            placeholder="Search players by username, email, or currency..."
+                            placeholder="Search accounts by username, email, or currency..."
                             value={userSearch}
                             onChange={(e) => setUserSearch(e.target.value)}
                             sx={{ minWidth: { sm: 320 } }}
@@ -641,7 +712,7 @@ export default function AdminPanel() {
                             }}
                         />
                         <Button variant="contained" startIcon={<AddIcon />} onClick={() => setCreateUserOpen(true)}>
-                            Create Demo Player
+                            Create Account
                         </Button>
                     </Stack>
 
@@ -651,6 +722,7 @@ export default function AdminPanel() {
                                 <TableRow>
                                     <TableCell>Username</TableCell>
                                     <TableCell>Email</TableCell>
+                                    <TableCell>Role</TableCell>
                                     <TableCell>Currency</TableCell>
                                     <TableCell align="right">Balance</TableCell>
                                     <TableCell align="center">KYC</TableCell>
@@ -660,9 +732,9 @@ export default function AdminPanel() {
                             <TableBody>
                                 {filteredUsers.length === 0 ? (
                                     <TableRow>
-                                        <TableCell colSpan={6} align="center" sx={{ py: 4 }}>
+                                        <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
                                             <Typography color="text.secondary">
-                                                No registered players yet. Create a demo player or sign up via the main app.
+                                                No accounts created yet. Click Create Account to add a player or admin.
                                             </Typography>
                                         </TableCell>
                                     </TableRow>
@@ -673,6 +745,16 @@ export default function AdminPanel() {
                                                 <Typography fontWeight={600}>{u.username}</Typography>
                                             </TableCell>
                                             <TableCell>{u.email}</TableCell>
+                                            <TableCell>
+                                                <Chip
+                                                    label={u.role === 'admin' ? 'Admin' : 'Player'}
+                                                    color={u.role === 'admin' ? 'primary' : 'default'}
+                                                    size="small"
+                                                    variant={u.role === 'admin' ? 'filled' : 'outlined'}
+                                                    onClick={() => handleToggleRole(u)}
+                                                    sx={{ cursor: 'pointer' }}
+                                                />
+                                            </TableCell>
                                             <TableCell>
                                                 <Chip label={u.currency} size="small" />
                                             </TableCell>
@@ -963,10 +1045,10 @@ export default function AdminPanel() {
                 </Grid>
             )}
 
-            {/* Create Demo User Dialog */}
+            {/* Create Account Dialog */}
             <Dialog open={createUserOpen} onClose={() => setCreateUserOpen(false)} maxWidth="xs" fullWidth>
                 <form onSubmit={handleCreateUser}>
-                    <DialogTitle>Create Demo Player</DialogTitle>
+                    <DialogTitle>Create Account</DialogTitle>
                     <DialogContent>
                         <Stack spacing={2} sx={{ pt: 1 }}>
                             <TextField
@@ -992,6 +1074,16 @@ export default function AdminPanel() {
                                 required
                                 fullWidth
                             />
+                            <TextField
+                                select
+                                label="Account Role"
+                                value={newUser.role}
+                                onChange={(e) => setNewUser((p) => ({ ...p, role: e.target.value as 'user' | 'admin' }))}
+                                fullWidth
+                            >
+                                <MenuItem value="user">Player (Standard User)</MenuItem>
+                                <MenuItem value="admin">Administrator (Full Admin Access)</MenuItem>
+                            </TextField>
                             <Stack direction="row" spacing={1.5}>
                                 <TextField
                                     select
@@ -1019,7 +1111,7 @@ export default function AdminPanel() {
                     <DialogActions>
                         <Button onClick={() => setCreateUserOpen(false)}>Cancel</Button>
                         <Button type="submit" variant="contained">
-                            Create Player
+                            Create Account
                         </Button>
                     </DialogActions>
                 </form>

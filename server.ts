@@ -37,6 +37,7 @@ interface UserRecord {
     username: string;
     name: string;
     email: string;
+    role: 'user' | 'admin';
     passwordHash: string;
     currency: string;
     avatar: string;
@@ -186,7 +187,14 @@ function verifyAdminTokenFromReq(req: Request): boolean {
     }
     const token = authHeader.slice(7).trim();
     const decoded = verifyToken(token);
-    return Boolean(decoded && decoded.role === 'admin');
+    if (!decoded || decoded.role !== 'admin') {
+        return false;
+    }
+    if (decoded.sub === 'admin') {
+        return true;
+    }
+    const user = usersByUsername.get(decoded.username);
+    return Boolean(user && user.role === 'admin');
 }
 
 function requireAdmin(req: Request, res: Response, next: NextFunction) {
@@ -756,51 +764,8 @@ async function startServer() {
     });
 
     // --- Auth & User Session Routes ---
-    app.post('/api/auth/register', (req, res) => {
-        const username = String(req.body?.username || '').trim();
-        const email = String(req.body?.email || '').trim();
-        const password = String(req.body?.password || '');
-        const currencyId = String(req.body?.currencyId || 'USD');
-
-        if (!username || username.length < 4 || !email || !password) {
-            return res.status(400).json({ message: 'Username, email, and password are required' });
-        }
-        if (usersByUsername.has(username)) {
-            return res.status(409).json({ message: 'Username already exists' });
-        }
-
-        const currencyObj = CURRENCIES.find((c) => c._id === currencyId) || CURRENCIES[0];
-        const userId = crypto.randomUUID();
-        const now = new Date().toISOString();
-
-        const user: UserRecord = {
-            _id: userId,
-            username,
-            name: username,
-            email,
-            passwordHash: hashPassword(password),
-            currency: currencyObj.name,
-            avatar: '/assets/images/avatar/default.png',
-            balance: 1000,
-            kyc: false,
-            firstDeposit: false,
-            stake: [],
-            preference: {
-                userId,
-                theme: 'dark',
-                hideUsername: false,
-                maxBetAlert: false,
-                currency: currencyObj,
-                depositEmailNotify: false,
-                withdrawEmailNotify: false,
-                marketingEmailNotify: false
-            },
-            createdAt: now,
-            updatedAt: now
-        };
-
-        usersByUsername.set(username, user);
-        res.status(201).json({ message: 'Registered successfully' });
+    app.post('/api/auth/register', (_req, res) => {
+        res.status(403).json({ message: 'Public sign-up is disabled. Only administrators can create accounts.' });
     });
 
     app.post('/api/auth/login', (req, res) => {
@@ -810,7 +775,7 @@ async function startServer() {
         if (!user || !verifyPassword(password, user.passwordHash)) {
             return res.status(401).json({ message: 'Invalid username or password' });
         }
-        const accessToken = signToken(user._id, user.username);
+        const accessToken = signToken(user._id, user.username, user.role);
         res.json({ accessToken, user: sanitizeUser(user) });
     });
 
@@ -936,6 +901,7 @@ async function startServer() {
         const password = typeof req.body?.password === 'string' ? req.body.password : '';
         const currencyId = String(req.body?.currency || 'USD').trim();
         const initialBalance = Number(req.body?.balance ?? 1000);
+        const role: 'user' | 'admin' = req.body?.role === 'admin' ? 'admin' : 'user';
 
         if (!username || username.length < 4 || !email || password.length < 6) {
             return res.status(400).json({ message: 'Valid username (4+ chars), email, and password (6+ chars) required' });
@@ -956,6 +922,7 @@ async function startServer() {
             username,
             name: username,
             email,
+            role,
             passwordHash: hashPassword(password),
             currency: currencyObj.name,
             avatar: '/assets/images/avatar/default.png',
@@ -978,6 +945,20 @@ async function startServer() {
         };
         usersByUsername.set(username, user);
         res.status(201).json(sanitizeUser(user));
+    });
+
+    app.patch('/api/admin/users/:id/role', requireAdmin, (req, res) => {
+        const target = Array.from(usersByUsername.values()).find((u) => u._id === req.params.id);
+        if (!target) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+        const role = req.body?.role;
+        if (role !== 'user' && role !== 'admin') {
+            return res.status(400).json({ message: 'Role must be user or admin' });
+        }
+        target.role = role;
+        target.updatedAt = new Date().toISOString();
+        res.json(sanitizeUser(target));
     });
 
     app.patch('/api/admin/users/:id/balance', requireAdmin, (req, res) => {
@@ -1159,10 +1140,31 @@ async function startServer() {
         });
     } else {
         const { createServer: createViteServer } = await import('vite');
+        const hmrDisabled = process.env.DISABLE_HMR === 'true';
         const vite = await createViteServer({
+            plugins: hmrDisabled
+                ? [
+                      {
+                          name: 'disable-hmr-client-ws',
+                          enforce: 'post',
+                          transform(code, id) {
+                              if (id.replace(/\\/g, '/').endsWith('/vite/dist/client/client.mjs')) {
+                                  return {
+                                      code: code.replace(
+                                          'transport.connect(handleMessage);',
+                                          '/* HMR disabled via DISABLE_HMR=true */'
+                                      ),
+                                      map: null
+                                  };
+                              }
+                          }
+                      }
+                  ]
+                : [],
             server: {
                 middlewareMode: true,
-                hmr: process.env.DISABLE_HMR !== 'true'
+                hmr: !hmrDisabled,
+                ws: hmrDisabled ? false : undefined
             },
             appType: 'spa'
         });

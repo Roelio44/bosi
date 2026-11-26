@@ -7,7 +7,6 @@ import { useSettingsContext } from 'components/settings';
 import { useResponsive } from 'hooks/use-responsive';
 //
 import SignInModal from './sign-in-modal';
-import SignUpModal from './sign-up-modal';
 import ForgotPasswordModal from './forgot-password-modal';
 import { useSearchParams } from 'routes/hook';
 import { useEffect } from 'react';
@@ -44,12 +43,11 @@ const SignModal = () => {
     useEffect(() => {
         if (referralCode) {
             localStorage.setItem('betthrob-r', referralCode);
-            onToggleModal('SIGNUP');
         }
     }, [referralCode]);
 
     return (
-        <StyledModal open={['SIGNIN', 'SIGNUP', 'PASSWORD'].includes(modal)} onClose={handleClose}>
+        <StyledModal open={['SIGNIN', 'PASSWORD'].includes(modal)} onClose={handleClose}>
             <ModalContent>
                 <Stack direction={{ xs: 'column', sm: 'row' }} sx={{ overflow: 'auto', width: 1 }}>
                     <Stack
@@ -132,14 +130,13 @@ const SignModal = () => {
                                     whiteSpace: 'nowrap'
                                 }}
                             >
-                                {t('signup&get_welcome_bonus')}
+                                Members-Only Casino &amp; Sportsbook
                             </Typography>
                         </Stack>
                     </Stack>
 
                     <Stack direction="column" justifyContent="space-between" width={{ xs: '100%', sm: '50%' }}>
                         {modal === 'SIGNIN' && <SignInModal />}
-                        {modal === 'SIGNUP' && <SignUpModal />}
                         {modal === 'PASSWORD' && <ForgotPasswordModal />}
                     </Stack>
                 </Stack>

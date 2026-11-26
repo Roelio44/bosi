@@ -28,6 +28,7 @@ import { useTranslate } from 'locales';
 import { usePathname, useRouter } from 'routes/hook';
 // hooks
 import { useAuth } from 'hooks/use-auth-context';
+import { useAdminAccess } from 'hooks/use-admin-access';
 import { ButtonBase } from '@mui/material';
 
 interface MenuItem {
@@ -329,6 +330,7 @@ const Navbar = memo(({ open }: NavProps) => {
     const pathname = usePathname();
     const { t } = useTranslate();
     const { isLogined } = useAuth();
+    const isAdmin = useAdminAccess();
     const { modal, onToggleModal } = useSettingsContext();
 
     const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({});
@@ -460,29 +462,31 @@ const Navbar = memo(({ open }: NavProps) => {
                     </Stack>
 
                     <Stack direction="column" gap={0.5}>
-                        <ListItem disablePadding>
-                            <ListItemButton
-                                onClick={() => handleNavigate('/admin')}
-                                sx={{
-                                    px: 0.5,
-                                    height: 40,
-                                    borderRadius: 2,
-                                    background:
-                                        pathname === '/admin'
-                                            ? 'linear-gradient(90deg,#23ee8833,#23ee8800),rgba(255, 255, 255, .05)'
-                                            : 'transparent',
-                                    color: pathname === '/admin' ? 'primary.main' : 'inherit',
-                                    '&:hover': {
-                                        background: 'linear-gradient(90deg,#23ee8833,#23ee8800),rgba(255, 255, 255, .05)'
-                                    }
-                                }}
-                            >
-                                <ListItemIcon sx={{ mr: 0.5, minWidth: 32, justifyContent: 'center' }}>
-                                    <AdminPanelSettingsOutlinedIcon fontSize="small" color={pathname === '/admin' ? 'primary' : 'inherit'} />
-                                </ListItemIcon>
-                                {open && <ListItemText primary="Admin Panel" />}
-                            </ListItemButton>
-                        </ListItem>
+                        {isAdmin && (
+                            <ListItem disablePadding>
+                                <ListItemButton
+                                    onClick={() => handleNavigate('/admin')}
+                                    sx={{
+                                        px: 0.5,
+                                        height: 40,
+                                        borderRadius: 2,
+                                        background:
+                                            pathname === '/admin'
+                                                ? 'linear-gradient(90deg,#23ee8833,#23ee8800),rgba(255, 255, 255, .05)'
+                                                : 'transparent',
+                                        color: pathname === '/admin' ? 'primary.main' : 'inherit',
+                                        '&:hover': {
+                                            background: 'linear-gradient(90deg,#23ee8833,#23ee8800),rgba(255, 255, 255, .05)'
+                                        }
+                                    }}
+                                >
+                                    <ListItemIcon sx={{ mr: 0.5, minWidth: 32, justifyContent: 'center' }}>
+                                        <AdminPanelSettingsOutlinedIcon fontSize="small" color={pathname === '/admin' ? 'primary' : 'inherit'} />
+                                    </ListItemIcon>
+                                    {open && <ListItemText primary="Admin Panel" />}
+                                </ListItemButton>
+                            </ListItem>
+                        )}
                         <TheemSwitch open={open} />
                     </Stack>
                 </Stack>

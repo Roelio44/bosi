@@ -15,12 +15,14 @@ import { useState } from 'react';
 import { useRouter } from 'routes/hook';
 import { paths } from 'routes/paths';
 import { useAuth } from 'hooks/use-auth-context';
+import { useAdminAccess } from 'hooks/use-admin-access';
 
 import { ASSETS } from 'utils/axios';
 import { useTranslate } from 'locales';
 
 export default function AccountPopover() {
     const { user, logout } = useAuth();
+    const isAdmin = useAdminAccess();
     const { t } = useTranslate();
 
     const router = useRouter();
@@ -155,20 +157,22 @@ export default function AccountPopover() {
                             </Stack>
                         </MenuItem>
                     ))}
-                    <MenuItem
-                        sx={{ minHeight: { xs: '15px', sm: 'auto' } }}
-                        onClick={() => {
-                            router.push(paths.admin.root);
-                            popover.onClose();
-                        }}
-                    >
-                        <Stack direction="row" alignItems="center" gap={1} p={{ xs: 0, sm: 0.3 }}>
-                            <AdminPanelSettingsOutlinedIcon sx={{ width: 24, height: 24, color: 'primary.main' }} />
-                            <Typography variant="body2" sx={{ flexGrow: 1 }}>
-                                Admin Panel
-                            </Typography>
-                        </Stack>
-                    </MenuItem>
+                    {isAdmin && (
+                        <MenuItem
+                            sx={{ minHeight: { xs: '15px', sm: 'auto' } }}
+                            onClick={() => {
+                                router.push(paths.admin.root);
+                                popover.onClose();
+                            }}
+                        >
+                            <Stack direction="row" alignItems="center" gap={1} p={{ xs: 0, sm: 0.3 }}>
+                                <AdminPanelSettingsOutlinedIcon sx={{ width: 24, height: 24, color: 'primary.main' }} />
+                                <Typography variant="body2" sx={{ flexGrow: 1 }}>
+                                    Admin Panel
+                                </Typography>
+                            </Stack>
+                        </MenuItem>
+                    )}
                 </Stack>
             </CustomPopover>
 

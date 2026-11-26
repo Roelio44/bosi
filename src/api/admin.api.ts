@@ -1,11 +1,20 @@
 import axiosInstance from 'utils/axios';
 
 let inMemoryAdminToken: string | null = null;
+const adminTokenListeners = new Set<() => void>();
 
 export const getAdminToken = () => inMemoryAdminToken;
 
 export const setAdminToken = (token: string | null) => {
     inMemoryAdminToken = token;
+    adminTokenListeners.forEach((listener) => listener());
+};
+
+export const subscribeAdminToken = (listener: () => void) => {
+    adminTokenListeners.add(listener);
+    return () => {
+        adminTokenListeners.delete(listener);
+    };
 };
 
 const adminHeaders = () =>
@@ -13,7 +22,7 @@ const adminHeaders = () =>
         ? {
               Authorization: `Bearer ${inMemoryAdminToken}`
           }
-        : {};
+        : undefined;
 
 export interface AdminStatus {
     envConfigured: boolean;
@@ -38,6 +47,7 @@ export interface AdminUser {
     username: string;
     name: string;
     email: string;
+    role: 'user' | 'admin';
     currency: string;
     balance: number;
     kyc: boolean;
@@ -90,8 +100,17 @@ export const adminApi = {
         password: string;
         currency: string;
         balance: number;
+        role?: 'user' | 'admin';
     }): Promise<AdminUser> => {
         const res = await axiosInstance.post('/api/admin/users', payload, { headers: adminHeaders() });
+        return res.data;
+    },
+    updateUserRole: async (userId: string, role: 'user' | 'admin'): Promise<AdminUser> => {
+        const res = await axiosInstance.patch(
+            `/api/admin/users/${userId}/role`,
+            { role },
+            { headers: adminHeaders() }
+        );
         return res.data;
     },
     updateUserBalance: async (

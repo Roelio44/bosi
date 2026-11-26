@@ -124,11 +124,6 @@ const AuthProvider = ({ children }: AuthProviderProps) => {
         [dispatch]
     );
 
-    // REGISTER
-    const register = useCallback(async (registerValue: any) => {
-        await axios.post('/api/auth/register', registerValue);
-    }, []);
-
     const setLanguage = useCallback(
         async (value: string) => {
             dispatch(languageAction(value));
@@ -186,14 +181,13 @@ const AuthProvider = ({ children }: AuthProviderProps) => {
             stakes: store.stakes,
             isLogined: store.isLogined,
             login,
-            register,
             logout,
             updateUser,
             setLanguage,
             updatePreferenceData,
             updateStakes
         }),
-        [store, login, logout, register, updateUser, updateStakes]
+        [store, login, logout, updateUser, updateStakes]
     );
 
     return <AuthContext.Provider value={memoizedValue}>{children}</AuthContext.Provider>;

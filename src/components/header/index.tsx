@@ -240,32 +240,24 @@ const Header = ({
                                     </>
                                 )}
                                 {!isLogined && (
-                                    <>
-                                        <Button
-                                            variant="outlined"
-                                            sx={{
-                                                color: 'text.primary',
-                                                border: '2px solid #e4eaf019',
-                                                px: '1rem',
-                                                height: { xs: '2.25rem', sm: '2.5rem' },
-                                                textTransform: 'uppercase',
-                                                '&:hover': {
-                                                    backgroundColor: 'transparent',
-                                                    borderColor: '#e4eaf019',
-                                                    boxShadow: 'none'
-                                                }
-                                            }}
-                                            onClick={() => onToggleModal('SIGNIN')}
-                                        >
-                                            {t('login')}
-                                        </Button>
-                                        <ColorButton
-                                            sx={{ height: { xs: '2.25rem', sm: '2.5rem' } }}
-                                            onClick={() => onToggleModal('SIGNUP')}
-                                        >
-                                            {t('register')}
-                                        </ColorButton>
-                                    </>
+                                    <Button
+                                        variant="outlined"
+                                        sx={{
+                                            color: 'text.primary',
+                                            border: '2px solid #e4eaf019',
+                                            px: '1rem',
+                                            height: { xs: '2.25rem', sm: '2.5rem' },
+                                            textTransform: 'uppercase',
+                                            '&:hover': {
+                                                backgroundColor: 'transparent',
+                                                borderColor: '#e4eaf019',
+                                                boxShadow: 'none'
+                                            }
+                                        }}
+                                        onClick={() => onToggleModal('SIGNIN')}
+                                    >
+                                        {t('login')}
+                                    </Button>
                                 )}
                                 <Box
                                     sx={{

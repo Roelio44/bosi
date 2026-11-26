@@ -3,7 +3,8 @@ import { styled } from '@mui/material/styles';
 import { Box, Button, Typography } from '@mui/material';
 // components
 import { useSettingsContext } from 'components/settings';
-import { IVip } from 'types/site';
+import { useAuth } from 'hooks/use-auth-context';
+import { useTranslate } from 'locales';
 
 const StyledBox = styled(Box)(({ theme }) => ({
     position: 'relative',
@@ -35,6 +36,8 @@ const HeroImage = styled('img')(({ theme }) => ({
 
 const VipBanner = () => {
     const { onToggleModal } = useSettingsContext();
+    const { isLogined } = useAuth();
+    const { t } = useTranslate();
 
     return (
         <StyledBox>
@@ -66,22 +69,24 @@ const VipBanner = () => {
                     Experience the thrill of higher cash back and exclusive rewards that are sure to leave you amazed.
                 </Typography>
             </Box>
-            <Box sx={{ mt: 3, display: 'flex', width: '100%', alignItems: 'center', gap: 1 }}>
-                <Button
-                    variant="contained"
-                    fullWidth
-                    sx={{
-                        maxWidth: { sm: '256px' },
-                        fontSize: '1rem',
-                        fontWeight: 800,
-                        textTransform: 'capitalize',
-                        backgroundImage: 'linear-gradient(270deg, #FBD765 0%, #EF9E3F 100%)'
-                    }}
-                    onClick={() => onToggleModal('SIGNUP')}
-                >
-                    Sign up
-                </Button>
-            </Box>
+            {!isLogined && (
+                <Box sx={{ mt: 3, display: 'flex', width: '100%', alignItems: 'center', gap: 1 }}>
+                    <Button
+                        variant="contained"
+                        fullWidth
+                        sx={{
+                            maxWidth: { sm: '256px' },
+                            fontSize: '1rem',
+                            fontWeight: 800,
+                            textTransform: 'capitalize',
+                            backgroundImage: 'linear-gradient(270deg, #FBD765 0%, #EF9E3F 100%)'
+                        }}
+                        onClick={() => onToggleModal('SIGNIN')}
+                    >
+                        {t('auth.signIn')}
+                    </Button>
+                </Box>
+            )}
         </StyledBox>
     );
 };
